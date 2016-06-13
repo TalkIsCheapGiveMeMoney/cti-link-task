@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<!-- 定义Quartz调度器 -->
+	<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="configLocation" value="classpath:quartz.properties" />
+		<property name="overwriteExistingJobs" value="true" />
+		<property name="dataSource" ref="dataSource" />
+		<property name="triggers">
+			<list>
+				<ref bean="cleanStatDataTrigger" />
+				<ref bean="reCurlTrigger" />
+				<ref bean="alarmTrigger" />
+			</list>
+		</property>
+	</bean>
+
+	<!-- 定时任务 -->
+	<!-- 每天00:00:01 清理统计值 -->
+	<bean id="cleanStatDataJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="com.tinet.ctilink.task.job.CleanStatDataJob" />
+		<property name="durability" value="true" />
+		<property name="description" value="清理统计值" />
+	</bean>
+	<bean id="cleanStatDataTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="cleanStatDataJob" />
+		<property name="cronExpression" value="1 0 0 * * ?" />
+	</bean>
+
+	<!-- 每天05:00:00 重新推送失败的Curl -->
+	<bean id="reCurlJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="com.tinet.ctilink.task.job.ReCurlJob" />
+		<property name="durability" value="true" />
+		<property name="description" value="重新推送失败的Curl" />
+	</bean>
+	<bean id="reCurlTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="reCurlJob" />
+		<property name="cronExpression" value="0 0 5 * * ?" />
+	</bean>
+
+	<!-- 告警 -->
+	<bean id="alarmJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="com.tinet.ctilink.task.job.AlarmJob" />
+		<property name="durability" value="true" />
+		<property name="description" value="告警检测" />
+	</bean>
+	<bean id="alarmTrigger" class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="alarmJob" />
+		<property name="startDelay" value="10000" />
+		<property name="repeatInterval" value="5000" />
+	</bean>
+</beans>
